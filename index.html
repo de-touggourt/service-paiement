@@ -908,11 +908,44 @@ if (data.result === "success") {
     Swal.fire("❌ خطأ", "فشل الاتصال بخدمة التسجيل", "error");
     submitBtn.disabled = false; submitBtn.style.opacity = 1;
   }
-}       
+}     
+
+   // 🔒 تحكم في فتح وغلق التسجيل من هنا
+  const registrationOpen = false; // ← غيّر إلى true عند الفتح
+
+  window.onload = function() {
+    const container = document.querySelector(".container");
+    const empInput = document.getElementById("empId");
+    const checkBtn = container.querySelector("button");
+
+    if (!registrationOpen) {
+      // إخفاء حقل الإدخال وزر التحقق
+      empInput.style.display = "none";
+      checkBtn.style.display = "none";
+
+      // إضافة رسالة الإغلاق
+      const msg = document.createElement("div");
+      msg.innerHTML = `
+        <div style="
+          background: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+          border-radius: 10px;
+          padding: 15px;
+          margin-top: 0px;
+           margin-bottom: 5px;
+          font-size: 16px;
+          font-weight: 600;">
+           التسجيل مغلق حاليًا<br>سيتم فتح الموقع قريبا...
+        </div>`;
+      container.appendChild(msg);
+    }
+  }; 
 
 </script>
 </body>
 </html>
+
 
 
 
