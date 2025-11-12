@@ -318,7 +318,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const scriptURL = "https://script.google.com/macros/s/AKfycby3fXQsAHQGv13vlBeu49p9x3zCS2apCGSbidQA_L-ObWomodqUnl7TpYHAhvJDGXO-1A/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxneJ6G0_TO0iTPSdJTPXycTDNy2NosoCNld6ALO-Y11XMxk4Uzufp8KNDNJ39T_WAncw/exec";
 
 
 
@@ -329,6 +329,60 @@ const scriptURL = "https://script.google.com/macros/s/AKfycby3fXQsAHQGv13vlBeu49
 function validateNumber(input) {
   input.value = input.value.replace(/\D/g, '');
   if (input.value.length > 16) input.value = input.value.slice(0, 16);
+}
+
+// دالة للتحقق من وجود تسجيل سابق في Google Sheets
+async function checkExistingRegistration(empId) {
+  try {
+    Swal.fire({ title: 'جاري التحقق...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    const params = new URLSearchParams();
+    params.append("action", "check");
+    params.append("empId", empId);
+
+    const res = await fetch(scriptURL, {
+      method: "POST",
+      body: params
+    });
+    const data = await res.json();
+    
+    Swal.close();
+
+    if (data.result === "exists") {
+      const d = data.data || {};
+      Swal.fire({
+        title: "⚠️ التسجيل موجود مسبقًا",
+        html: `
+          <div style="text-align:right;direction:rtl;font-family:'Cairo',sans-serif;">
+            <b>رقم التعريف:</b> ${d.empId || ''}<br>
+            <b>الاسم واللقب:</b> ${d.name || ''}<br>
+            <b>الرتبة:</b> ${d.grade || ''}<br>
+            <b>مؤسسة العمل الأصلية:</b> ${d.place || ''}<br>
+            <b>الصفة:</b> ${d.role || ''}<br>
+            <b>موسسة العمل الحالية:</b> ${d.currentWork || ''}<br>
+            <b>الطور:</b> ${d.level || ''}<br>
+            <b>الدائرة:</b> ${d.daira || ''}<br>
+            <b>البلدية:</b> ${d.baladiya || ''}<br>
+            <b>اسم المؤسسة:</b> ${d.school || ''}<br>
+            <b>رمز المؤسسة:</b> ${d.schoolCode || ''}<br>
+            <b>البريد الإلكتروني:</b> ${d.email || ''}<br>
+            <b>هاتف المدير:</b> ${d.directorPhone || ''}<br>
+            <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
+            <b>هاتف المسير المالي:</b> ${d.financialPhone || ''}<br>
+            <b>تاريخ التسجيل:</b> ${d.date || ''}
+          </div>
+        `,
+        icon: "warning",
+        confirmButtonText: "إغلاق"
+      }).then(() => location.reload());
+      return true; // يوجد تسجيل سابق
+    }
+    return false; // لا يوجد تسجيل سابق
+  } catch (error) {
+    Swal.close();
+    console.error("خطأ في التحقق من Google Sheets:", error);
+    return false; // في حالة الخطأ، نتابع
+  }
 }
 
 async function checkEmployee() {
@@ -348,12 +402,22 @@ async function checkEmployee() {
 
     if (docSnap.exists) {
       const data = docSnap.data();
+      
+      // أولاً: عرض رسالة "تم التحقق بنجاح" من Firebase
       Swal.fire({
-        title: "✅ تم التحقق بنجاح",
+        title: "✅ تم العثور عل الموظف بنجاح",
         html: `<b>الاسم واللقب:</b> ${escapeHtml(data.name)}<br><b>الرتبة:</b> ${escapeHtml(data.grade)}<br><b>مكان العمل:</b> ${escapeHtml(data.place)}`,
         icon: "success",
-        confirmButtonText: "متابعة التسجيل"
-      }).then(() => showForm(empId, data));
+        confirmButtonText: "متابعة"
+      }).then(async () => {
+        // ثانياً: بعد الضغط على "متابعة"، التحقق من Google Sheets
+        const exists = await checkExistingRegistration(empId);
+        
+        if (!exists) {
+          // إذا لم يوجد تسجيل سابق، نعرض النموذج
+          showForm(empId, data);
+        }
+      });
     } else {
       Swal.fire("❌ خطأ", "رقم الموظف غير موجود في قاعدة البيانات", "error");
     }
@@ -840,33 +904,10 @@ if (data.result === "success") {
     location.reload(); // عند الإغلاق يعيد تحميل الصفحة فقط
   });
 
-} else if (data.result === "exists") {
-  const d = data.data || {};
-  Swal.fire({
-    title: "⚠️ التسجيل موجود مسبقًا",
-    html: `
-      <div style="text-align:right;direction:rtl;font-family:'Cairo',sans-serif;">
-        <b>رقم التعريف:</b> ${d.empId || ''}<br>
-        <b>الاسم واللقب:</b> ${d.name || ''}<br>
-        <b>الرتبة:</b> ${d.grade || ''}<br>
-        <b>مؤسسة العمل الأصلية:</b> ${d.place || ''}<br>
-        <b>الصفة:</b> ${d.role || ''}<br>
-        <b>موسسة العمل الحالية:</b> ${d.currentWork || ''}<br>
-        <b>الطور:</b> ${d.level || ''}<br>
-        <b>الدائرة:</b> ${d.daira || ''}<br>
-        <b>البلدية:</b> ${d.baladiya || ''}<br>
-        <b>اسم المؤسسة:</b> ${d.school || ''}<br>
-        <b>رمز المؤسسة:</b> ${d.schoolCode || ''}<br>
-        <b>البريد الإلكتروني:</b> ${d.email || ''}<br>
-        <b>هاتف المدير:</b> ${d.directorPhone || ''}<br>
-        <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
-        <b>هاتف المسير المالي:</b> ${d.financialPhone || ''}<br>
-        <b>تاريخ التسجيل:</b> ${d.date || ''}
-      </div>
-    `,
-    icon: "warning",
-    confirmButtonText: "إغلاق"
-  }).then(() => location.reload());
+
+
+
+
 
 } else if (data.result === "email_exists") {
   Swal.fire({
@@ -945,15 +986,4 @@ if (data.result === "success") {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
 
