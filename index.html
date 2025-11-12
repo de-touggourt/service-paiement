@@ -842,6 +842,12 @@ if (data.result === "success") {
 
 } else if (data.result === "exists") {
   const d = data.data || {};
+  
+  // نُجهّز النص الخاص بمؤسسة العمل الحالية فقط إذا كانت الصفة "مدير مكلف"
+  const currentWorkLine = (d.role === "مدير مكلف" && d.currentWork)
+    ? `<b>مؤسسة العمل الحالية:</b> ${d.currentWork}<br>`
+    : "";
+
   Swal.fire({
     title: "⚠️ التسجيل موجود مسبقًا",
     html: `
@@ -851,7 +857,7 @@ if (data.result === "success") {
         <b>الرتبة:</b> ${d.grade || ''}<br>
         <b>مؤسسة العمل الأصلية:</b> ${d.place || ''}<br>
         <b>الصفة:</b> ${d.role || ''}<br>
-        <b>موسسة العمل الحالية:</b> ${d.currentWork || ''}<br>
+        ${currentWorkLine}
         <b>الطور:</b> ${d.level || ''}<br>
         <b>الدائرة:</b> ${d.daira || ''}<br>
         <b>البلدية:</b> ${d.baladiya || ''}<br>
@@ -867,6 +873,7 @@ if (data.result === "success") {
     icon: "warning",
     confirmButtonText: "إغلاق"
   }).then(() => location.reload());
+
 
 } else if (data.result === "email_exists") {
   Swal.fire({
@@ -945,4 +952,5 @@ if (data.result === "success") {
 </script>
 </body>
 </html>
+
 
