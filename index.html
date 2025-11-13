@@ -1066,7 +1066,7 @@ async function submitForm() {
 
   // ✅ تحقق من البريد الإلكتروني
   if (!instEmail.endsWith("@gmail.com")) {
-  Swal.fire("تنبيه", "يُسمح فقط ببريد example123@gmail.com", "warning");
+  Swal.fire("تنبيه", "يُسمح فقط ببريد جيمايل مثل : example123@gmail.com", "warning");
   submitBtn.disabled = false;
   submitBtn.style.opacity = 1;
   return;
@@ -1269,5 +1269,6 @@ if (data.result === "success") {
 </script>
 </body>
 </html>
+
 
 
