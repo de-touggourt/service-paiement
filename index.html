@@ -410,7 +410,7 @@ async function checkEmployee() {
           showCancelButton: true,
           confirmButtonText: "تعديل البيانات",
           cancelButtonText: "إغلاق",
-          confirmButtonColor: "#C364F7"
+          confirmButtonColor: "#FF9D00"
         }).then((result) => {
           if (result.isConfirmed) {
             // عرض الاستمارة مع البيانات للتعديل
@@ -1066,7 +1066,7 @@ async function submitForm() {
 
   // ✅ تحقق من البريد الإلكتروني
   if (!instEmail.endsWith("@gmail.com")) {
-  Swal.fire("تنبيه", "يُسمح فقط ببريد gmail", "warning");
+  Swal.fire("تنبيه", "يُسمح فقط ببريد example123@gmail.com", "warning");
   submitBtn.disabled = false;
   submitBtn.style.opacity = 1;
   return;
@@ -1269,4 +1269,5 @@ if (data.result === "success") {
 </script>
 </body>
 </html>
+
 
