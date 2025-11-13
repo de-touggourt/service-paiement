@@ -205,8 +205,8 @@ button {
       </div>
  <img src="https://lh3.googleusercontent.com/d/1BqWoqh1T1lArUcwAGNF7cGnnN83niKVl" alt="شعار اللجنة" class="header-logo">
       <h2 class="gradient-title">بوابة مصلحة تسيير نفقات المستخدمين</h2>
-      <input type="text" id="empId" placeholder="أدخل رقم التعريف الوظيفي" oninput="validateNumber(this)">
-      <button onclick="checkEmployee()">تحقق من رقم التعريف</button>
+      <input type="text" id="empId" placeholder="أدخل رقم التعريف الوظيفي الخاص بالمدير أو المكلف" oninput="validateNumber(this)">
+      <button onclick="checkEmployee()">تسجيل الدخول</button>
     </div>
   </div>
 
@@ -318,7 +318,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const scriptURL = "https://script.google.com/macros/s/AKfycbyWcmBcSPOhFk5qc8bgb8cGO794K0psiNgyYqjWpojbEqnaWxHqMRlI6T68HQT4C7kUaw/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbyZOTzrCm9AUh172ya7kD9zqJpYLQv1jnTBrycmUGuoU2oiH9FnmjyN9k5okWA8cFl1kA/exec";
 
 
 
@@ -339,30 +339,87 @@ async function checkEmployee() {
     return;
   }
 
-  Swal.fire({ title: 'جاري البحث عن الموظف...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  Swal.fire({ title: 'جاري التحقق...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
   try {
     const docRef = db.collection("employees").doc(empId);
     const docSnap = await docRef.get();
-    Swal.close();
 
-    if (docSnap.exists) {
-      const data = docSnap.data();
+    if (!docSnap.exists) {
+      Swal.close();
+      Swal.fire("❌ خطأ", "رقم الموظف غير موجود في قاعدة البيانات", "error");
+      return;
+    }
+
+    const data = docSnap.data();
+
+    // ✅ التحقق من وجود تسجيل سابق قبل عرض الاستمارة
+    const params = new URLSearchParams();
+    params.append("action", "check_existing");
+    params.append("empId", empId);
+
+    try {
+      const res = await fetch(scriptURL, {
+        method: "POST",
+        body: params
+      });
+      const result = await res.json();
+
+      Swal.close();
+
+      if (result.result === "exists") {
+        const d = result.data || {};
+        const currentWorkLine = (d.role === "مدير مكلف" && d.currentWork)
+          ? `<b>مؤسسة العمل الحالية:</b> ${d.currentWork}<br>` : "";
+
+        Swal.fire({
+          title: "⚠️ التسجيل موجود مسبقًا",
+          html: `
+            <div style="text-align:right;direction:rtl;font-family:'Cairo',sans-serif;">
+              <b>رقم التعريف:</b> ${d.empId || ''}<br>
+              <b>الاسم واللقب:</b> ${d.name || ''}<br>
+              <b>الرتبة:</b> ${d.grade || ''}<br>
+              <b>مؤسسة العمل الأصلية:</b> ${d.place || ''}<br>
+              <b>الصفة:</b> ${d.role || ''}<br>
+              ${currentWorkLine}
+              <b>الطور:</b> ${d.level || ''}<br>
+              <b>الدائرة:</b> ${d.daira || ''}<br>
+              <b>البلدية:</b> ${d.baladiya || ''}<br>
+              <b>اسم المؤسسة:</b> ${d.school || ''}<br>
+              <b>رمز المؤسسة:</b> ${d.schoolCode || ''}<br>
+              <b>البريد الإلكتروني:</b> ${d.email || ''}<br>
+              <b>هاتف المدير:</b> ${d.directorPhone || ''}<br>
+              <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
+              <b>هاتف المسير المالي:</b> ${d.financialPhone || ''}<br>
+              <b>تاريخ التسجيل:</b> ${d.date || ''}
+            </div>`,
+          icon: "warning",
+          confirmButtonText: "إغلاق"
+        });
+        return; // 🟥 لا نعرض الاستمارة
+      }
+
+      // 🟢 في حالة عدم وجود تسجيل سابق → نسمح بمتابعة التسجيل
       Swal.fire({
         title: "✅ تم التحقق بنجاح",
         html: `<b>الاسم واللقب:</b> ${escapeHtml(data.name)}<br><b>الرتبة:</b> ${escapeHtml(data.grade)}<br><b>مكان العمل:</b> ${escapeHtml(data.place)}`,
         icon: "success",
         confirmButtonText: "متابعة التسجيل"
       }).then(() => showForm(empId, data));
-    } else {
-      Swal.fire("❌ خطأ", "رقم الموظف غير موجود في قاعدة البيانات", "error");
+
+    } catch (err) {
+      Swal.close();
+      Swal.fire("❌ خطأ", "تعذر التحقق من التسجيلات السابقة", "error");
+      console.error("check_existing error:", err);
     }
+
   } catch (err) {
     Swal.close();
-    Swal.fire("❌ خطأ", "حدث خطأ أثناء الاتصال بقاعدة البيانات", "error");
-    console.error(err);
+    Swal.fire("❌ خطأ", "حدث خطأ أثناء الاتصال بقاعدة بيانات الموظفين", "error");
+    console.error("Firebase error:", err);
   }
 }
+
 
 function escapeHtml(str){ return String(str || '').replace(/[&<>"'`=\/]/g, function(s){ return '&#' + s.charCodeAt(0) + ';'; }); }
 
@@ -567,7 +624,9 @@ function showForm(empId, data) {
     </div>
 
     <input type="text" id="institutionCodeField" placeholder="رمز المؤسسة" readonly style="display:none; margin-top:6px;">
-    <input type="text" id="institutionEmailField" placeholder="البريد الإلكتروني للمؤسسة">
+
+    <input type="text" id="institutionEmailField" placeholder="البريد الإلكتروني للمؤسسة (example123@gmail.com)" oninput="validateGmail(this)">
+
     <input type="text" id="phoneDirectorField" placeholder="رقم هاتف المدير (10 أرقام)" oninput="formatPhoneSimple(this)">
     <input type="text" id="financialManagerField" placeholder="اسم ولقب المسير المالي">
     <input type="text" id="phoneFinancialField" placeholder="رقم هاتف المسير المالي (10 أرقام)" oninput="formatPhoneSimple(this)">
@@ -691,6 +750,25 @@ function validateEmail(email) {
   return re.test(String(email).toLowerCase());
 }
 
+function validateGmail(input) {
+  // إزالة المسافات
+  input.value = input.value.replace(/\s/g, '');
+  
+  // منع الحروف العربية
+  input.value = input.value.replace(/[\u0600-\u06FF]/g, '');
+  
+  // إجبار النص على حروف صغيرة
+  input.value = input.value.toLowerCase();
+  
+  // السماح فقط بـ gmail
+  if (!input.value.endsWith("@gmail.com") && input.value.length > 0) {
+    input.setCustomValidity("يُسمح فقط بحسابات gmail");
+  } else {
+    input.setCustomValidity("");
+  }
+}
+
+
 async function submitForm() {
   const submitBtn = document.getElementById("submitBtn");
   submitBtn.disabled = true;
@@ -775,12 +853,19 @@ async function submitForm() {
   }
 
   // ✅ تحقق من البريد الإلكتروني
-  if (instEmail && !validateEmail(instEmail)) {
-    Swal.fire("تنبيه", "صيغة البريد الإلكتروني غير صحيحة", "warning");
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = 1;
-    return;
-  }
+  if (!instEmail.endsWith("@gmail.com")) {
+  Swal.fire("تنبيه", "يُسمح فقط ببريد gmail", "warning");
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = 1;
+  return;
+}
+if (/[أ-ي]/.test(instEmail)) {
+  Swal.fire("تنبيه", "البريد الإلكتروني لا يجب أن يحتوي على حروف عربية", "warning");
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = 1;
+  return;
+}
+
 
   if (sifa === "مدير مكلف" && !currentWork) {
   Swal.fire({
@@ -833,7 +918,7 @@ async function submitForm() {
 if (data.result === "success") {
   Swal.fire({
     title: "✅ تم التسجيل بنجاح",
-    text: "تم تسجيل بياناتك بنجاح",
+    text: "تم تسجيل بياناتك في قاعدة بيانات مصلحة تسيير نفقات المستخدمين بنجاح",
     icon: "success",
     confirmButtonText: "إغلاق"
   }).then(() => {
@@ -873,7 +958,6 @@ if (data.result === "success") {
     icon: "warning",
     confirmButtonText: "إغلاق"
   }).then(() => location.reload());
-
 
 } else if (data.result === "email_exists") {
   Swal.fire({
