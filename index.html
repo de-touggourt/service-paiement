@@ -332,7 +332,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const scriptURL = "https://script.google.com/macros/s/AKfycbzZTthzAyOvK9_EWhVH8NDoljOb5wB-oSDhmdeen9hWeL2AOfVaHoTarI39nK22epGHug/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbzko6_WMnohvuZiyzDB3iYiwQvLZ0vhxw1vtsMHbZA61hxmqeeGsNzp3f7HOp4kd6WT/exec";
 
 
 
@@ -405,7 +405,7 @@ async function checkEmployee() {
               <b>هاتف المدير:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.directorPhone || '')}</span><br>
               <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
               <b>هاتف المسير المالي:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.financialPhone || '')}</span><br>
-              <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>
+              <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>${d.modificationDate ? `<br><b>تاريخ التعديل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.modificationDate || '')}</span>` : ''}
             </div>`,
           icon: "warning",
           showCancelButton: true,
@@ -482,7 +482,7 @@ function formatDateFromISO(dateStr) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
     
-    return `${hours}:${minutes}:${seconds} ${year}-${month}-${day}`;
+    return `${hours}:${minutes}:${seconds} ll ${year}-${month}-${day}`;
   } catch (err) {
     return dateStr; // في حالة الخطأ، نعيد التاريخ الأصلي
   }
@@ -1161,7 +1161,19 @@ if (/[أ-ي]/.test(instEmail)) {
   params.append("financialPhone", phoneFinancial); // ✅ بدل phoneFinancial
   params.append("email", instEmail); // ✅ بدل instEmail
   params.append("currentWork", currentWork);
-
+  
+  // ✅ إضافة تاريخ التعديل فقط في وضع التعديل
+  if (isEditMode) {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const modificationDate = `${hours}:${minutes}:${seconds} ll ${year}-${month}-${day}`;
+    params.append("modificationDate", modificationDate);
+  }
 
   Swal.fire({ title: isEditMode ? 'جاري حفظ التعديلات...' : 'جاري تسجيل البيانات...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
@@ -1214,7 +1226,7 @@ if (data.result === "success") {
         <b>هاتف المدير:</b> ${formatPhoneNumber(d.directorPhone || '')}<br>  
         <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
         <b>هاتف المسير المالي:</b> ${formatPhoneNumber(d.financialPhone || '')}<br>
-        <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>
+        <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>${d.modificationDate ? `<br><b>تاريخ التعديل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.modificationDate || '')}</span>` : ''}
       </div>
     `,
     icon: "warning",
@@ -1385,6 +1397,4 @@ async function deleteRegistration(empId) {
 </script>
 </body>
 </html>
-
-
 
