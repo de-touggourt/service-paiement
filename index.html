@@ -482,7 +482,7 @@ function formatDateFromISO(dateStr) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
     
-    return `${hours}:${minutes}:${seconds} ll ${year}-${month}-${day}`;
+    return `${hours}:${minutes}:${seconds} ${year}-${month}-${day}`;
   } catch (err) {
     return dateStr; // في حالة الخطأ، نعيد التاريخ الأصلي
   }
@@ -1385,4 +1385,5 @@ async function deleteRegistration(empId) {
 </script>
 </body>
 </html>
+
 
