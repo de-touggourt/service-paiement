@@ -332,7 +332,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const scriptURL = "https://script.google.com/macros/s/AKfycbxtEjm017LoR1XK6zGHmEGPWXgYMChHvvzDwg2N5dwD0bKuVU2XO7_KevlebfXomSeHMQ/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbwj95A1PV4atxKueEvFjt13OY8np1qH4gJV2W0L0zBjLH-si_RGl2JQZz8hehU5XrfU/exec";
 
 
 
@@ -700,7 +700,7 @@ function showForm(empId, data) {
     <input type="text" id="phoneDirectorField" placeholder="رقم هاتف المدير (10 أرقام)" oninput="formatPhoneSimple(this)" dir="ltr">
     <input type="text" id="financialManagerField" placeholder="اسم ولقب المسير المالي">
     <input type="text" id="phoneFinancialField" placeholder="رقم هاتف المسير المالي (10 أرقام)" oninput="formatPhoneSimple(this)" dir="ltr">
-    <input type="text" id="institutionFixedPhoneField" placeholder="رقم الهاتف الثابت للمؤسسة (إن وجد)" oninput="formatFixedPhone(this)" dir="ltr">
+    <input type="text" id="institutionFixedPhoneField" placeholder="رقم الهاتف الثابت للمؤسسة (إن وجيد)" oninput="formatFixedPhone(this)" dir="ltr">
 
     <div class="small-note">تحقق من إدخال جميع الحقول المطلوبة ثم اضغط تسجيل</div>
     <button id="submitBtn" onclick="submitForm()">تسجيل</button>
@@ -858,7 +858,10 @@ function showEditForm(empId, firebaseData, existingData) {
         document.getElementById("phoneDirectorField").value = formatPhoneNumber(existingData.directorPhone || "");
         document.getElementById("financialManagerField").value = existingData.financialName || "";
         document.getElementById("phoneFinancialField").value = formatPhoneNumber(existingData.financialPhone || "");
-        // تم إزالة التعبئة التلقائية لحقل رقم الهاتف الثابت - يجب على المستخدم إدخاله يدوياً
+        // تعبئة رقم الهاتف الثابت عند التعديل فقط (إذا كانت البيانات موجودة)
+        if (existingData.institutionFixedPhone) {
+          document.getElementById("institutionFixedPhoneField").value = formatFixedPhoneNumber(existingData.institutionFixedPhone || "");
+        }
       }, 300);
     }, 200);
   }, 100);
@@ -1480,5 +1483,4 @@ async function deleteRegistration(empId) {
 </script>
 </body>
 </html>
-
 
