@@ -63,6 +63,7 @@
       font-weight: 600;
       background: linear-gradient(to right, #6a11cb, #2575fc);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-top: 0px;
       margin-bottom: 15px;
@@ -331,7 +332,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const scriptURL = "https://script.google.com/macros/s/AKfycbzxsBzsiIpKTY0tWI-_z8nbsXV0n4r0m7J-iOHQQf073-GVSud5nHoZ2K-cJE6rnlo1Hw/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxGRlHx222iGYIF5ehoj2IPSqHxUgRYFp4-Xt8as1b7gtJeLvs5OWeiGyemSu2q68g3Gg/exec";
 
 
 
@@ -404,17 +405,23 @@ async function checkEmployee() {
               <b>هاتف المدير:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.directorPhone || '')}</span><br>
               <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
               <b>هاتف المسير المالي:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.financialPhone || '')}</span><br>
-              <b>تاريخ التسجيل:</b> ${d.date || ''}
+              <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>
             </div>`,
           icon: "warning",
           showCancelButton: true,
+          showDenyButton: true,
           confirmButtonText: "تعديل البيانات",
+          denyButtonText: "حذف التسجيل",
           cancelButtonText: "إغلاق",
-          confirmButtonColor: "#FFBB4D"
+          confirmButtonColor: "#FFAD29",
+          denyButtonColor: "#dc3545"
         }).then((result) => {
           if (result.isConfirmed) {
             // عرض الاستمارة مع البيانات للتعديل
             showEditForm(empId, data, d);
+          } else if (result.isDenied) {
+            // حذف التسجيل
+            deleteRegistration(empId);
           }
         });
         return; // 🟥 لا نعرض الاستمارة إلا عند الضغط على تعديل
@@ -443,6 +450,43 @@ async function checkEmployee() {
 
 
 function escapeHtml(str){ return String(str || '').replace(/[&<>"'`=\/]/g, function(s){ return '&#' + s.charCodeAt(0) + ';'; }); }
+
+// دالة لتحويل التاريخ من صيغة ISO إلى صيغة "dd-MM-yyyy HH:mm:ss"
+function formatDateFromISO(dateStr) {
+  if (!dateStr) return 'غير محدد';
+  
+  try {
+    let date;
+    
+    // التحقق إذا كان التاريخ بصيغة ISO (مثل: 2025-11-14T12:17:26.000Z)
+    if (dateStr.includes('T')) {
+      date = new Date(dateStr);
+    } else if (dateStr.includes('-') && dateStr.includes(' ')) {
+      // إذا كان بصيغة "dd-MM-yyyy HH:mm:ss" نعيده كما هو
+      return dateStr;
+    } else {
+      // محاولة تحويله كتاريخ
+      date = new Date(dateStr);
+    }
+    
+    // التحقق من صحة التاريخ
+    if (isNaN(date.getTime())) {
+      return dateStr;
+    }
+    
+    // تحويل التاريخ إلى صيغة "dd-MM-yyyy HH:mm:ss"
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${hours}:${minutes}:${seconds} ll ${year}-${month}-${day}`;
+  } catch (err) {
+    return dateStr; // في حالة الخطأ، نعيد التاريخ الأصلي
+  }
+}
 
 /* ----- بيانات المؤسسات حسب الدائرة (متوسط / ثانوي) ----- 
    يمكن توسيع هذا الكائن لاحقًا أو جلبه من ملف خارجي.
@@ -1066,7 +1110,7 @@ async function submitForm() {
 
   // ✅ تحقق من البريد الإلكتروني
   if (!instEmail.endsWith("@gmail.com")) {
-  Swal.fire("تنبيه", "يُسمح فقط ببريد جيمايل مثل : example123@gmail.com", "warning");
+  Swal.fire("تنبيه", "يُسمح فقط ببريد gmail", "warning");
   submitBtn.disabled = false;
   submitBtn.style.opacity = 1;
   return;
@@ -1170,7 +1214,7 @@ if (data.result === "success") {
         <b>هاتف المدير:</b> ${formatPhoneNumber(d.directorPhone || '')}<br>  
         <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
         <b>هاتف المسير المالي:</b> ${formatPhoneNumber(d.financialPhone || '')}<br>
-        <b>تاريخ التسجيل:</b> ${d.date || ''}
+        <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>
       </div>
     `,
     icon: "warning",
@@ -1232,6 +1276,78 @@ if (data.result === "success") {
     submitBtn.disabled = false; 
     submitBtn.style.opacity = 1;
   }
+}
+
+// دالة حذف التسجيل من Google Sheet
+async function deleteRegistration(empId) {
+  // طلب تأكيد من المستخدم قبل الحذف
+  const confirmResult = await Swal.fire({
+    title: "⚠️ تأكيد الحذف",
+    text: "هل أنت متأكد من حذف هذا التسجيل؟ لا يمكن التراجع عن هذه العملية.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "نعم، احذف",
+    cancelButtonText: "إلغاء",
+    confirmButtonColor: "#dc3545",
+    cancelButtonColor: "#6c757d"
+  });
+
+  if (!confirmResult.isConfirmed) {
+    return; // المستخدم ألغى العملية
+  }
+
+  Swal.fire({ 
+    title: 'جاري حذف التسجيل...', 
+    allowOutsideClick: false, 
+    didOpen: () => Swal.showLoading() 
+  });
+
+  try {
+    const params = new URLSearchParams();
+    params.append("action", "delete");
+    params.append("empId", empId);
+
+    const res = await fetch(scriptURL, {
+      method: "POST",
+      body: params
+    });
+
+    const data = await res.json();
+
+    if (data.result === "success") {
+      Swal.fire({
+        title: "✅ تم الحذف بنجاح",
+        text: "تم حذف التسجيل من قاعدة البيانات بنجاح",
+        icon: "success",
+        confirmButtonText: "حسنًا"
+      }).then(() => {
+        location.reload(); // إعادة تحميل الصفحة بعد الحذف
+      });
+    } else if (data.result === "not_found") {
+      Swal.fire({
+        title: "⚠️ لم يتم العثور على التسجيل",
+        text: "التسجيل غير موجود في قاعدة البيانات",
+        icon: "warning",
+        confirmButtonText: "حسنًا"
+      });
+    } else {
+      const errorMsg = data.message || data.error || "تعذر حذف التسجيل";
+      Swal.fire({
+        icon: "error",
+        title: "❌ خطأ",
+        text: errorMsg,
+        confirmButtonText: "حسنًا"
+      });
+    }
+  } catch (error) {
+    console.error("Delete error:", error);
+    Swal.fire({
+      icon: "error",
+      title: "❌ خطأ",
+      text: "فشل الاتصال بخدمة الحذف: " + error.message,
+      confirmButtonText: "حسنًا"
+    });
+  }
 }    
 
  // 🔒 تحكم في فتح وغلق التسجيل من هنا
@@ -1269,9 +1385,4 @@ if (data.result === "success") {
 </script>
 </body>
 </html>
-
-
-
-
-
 
