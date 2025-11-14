@@ -401,9 +401,9 @@ async function checkEmployee() {
               <b>اسم المؤسسة:</b> ${d.school || ''}<br>
               <b>رمز المؤسسة:</b> ${d.schoolCode || ''}<br>
               <b>البريد الإلكتروني:</b> ${d.email || ''}<br>
-              <b>هاتف المدير:</b> ${formatPhoneNumber(d.directorPhone || '')}<br>
+              <b>هاتف المدير:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.directorPhone || '')}</span><br>
               <b>اسم المسير المالي:</b> ${d.financialName || ''}<br>
-              <b>هاتف المسير المالي:</b> ${formatPhoneNumber(d.financialPhone || '')}<br>
+              <b>هاتف المسير المالي:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.financialPhone || '')}</span><br>
               <b>تاريخ التسجيل:</b> ${d.date || ''}
             </div>`,
           icon: "warning",
@@ -1269,6 +1269,7 @@ if (data.result === "success") {
 </script>
 </body>
 </html>
+
 
 
 
