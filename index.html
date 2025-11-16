@@ -699,7 +699,7 @@ function showForm(empId, data) {
     <input type="text" id="phoneDirectorField" placeholder="رقم هاتف المدير (10 أرقام)" oninput="formatPhoneSimple(this)" dir="ltr">
     <input type="text" id="financialManagerField" placeholder="اسم ولقب المسير المالي">
     <input type="text" id="phoneFinancialField" placeholder="رقم هاتف المسير المالي (10 أرقام)" oninput="formatPhoneSimple(this)" dir="ltr">
-    <input type="text" id="institutionFixedPhoneField" placeholder="رقم الهاتف الثابت للمؤسسة (إن وجيد)" oninput="formatFixedPhone(this)" dir="ltr">
+    <input type="text" id="institutionFixedPhoneField" placeholder="رقم الهاتف الثابت للمؤسسة (إذا كان متوفر)" oninput="formatFixedPhone(this)" dir="ltr">
 
     <div class="small-note">تحقق من إدخال جميع الحقول المطلوبة ثم اضغط تسجيل</div>
     <button id="submitBtn" onclick="submitForm()">تسجيل</button>
@@ -1482,6 +1482,7 @@ async function deleteRegistration(empId) {
 </script>
 </body>
 </html>
+
 
 
 
